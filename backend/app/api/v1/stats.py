@@ -191,10 +191,10 @@ def get_all_students_stats(
         ).order_by(QuizAttempt.started_at.desc()).first()
         
         stats_list.append(StudentStats(
-            student_id=student.id,
+            user_id=student.id,
             student_name=f"{student.first_name} {student.last_name}",
             email=student.email,
-            student_code=student.student_id,
+            student_code=student.user_id,
             department=student.department,
             class_year=student.class_year,
             total_quizzes_attempted=total_attempted,
@@ -257,10 +257,10 @@ def get_student_stats(
     ).order_by(QuizAttempt.started_at.desc()).first()
     
     return StudentStats(
-        student_id=student.id,
+        user_id=student.id,
         student_name=f"{student.first_name} {student.last_name}",
         email=student.email,
-        student_code=student.student_id,
+        student_code=student.user_id,
         department=student.department,
         class_year=student.class_year,
         total_quizzes_attempted=total_attempted,
@@ -287,11 +287,8 @@ def get_dashboard_stats(
         )
     
     total_quizzes = db.query(Quiz).count()
+    active_quizzes = db.query(Quiz).filter(Quiz.is_active == True).count()
     total_students = db.query(User).filter(User.role == RoleEnum.STUDENT).count()
-    active_students = db.query(User).filter(
-        User.role == RoleEnum.STUDENT,
-        User.is_active == True
-    ).count()
     total_teachers = db.query(User).filter(User.role == RoleEnum.TEACHER).count()
     
     # Teachers active today (logged in today)
@@ -313,7 +310,7 @@ def get_dashboard_stats(
     
     return DashboardStats(
         total_quizzes=total_quizzes,
-        active_students=active_students,
+        active_quizzes=active_quizzes,
         total_students=total_students,
         total_teachers=total_teachers,
         active_teachers_today=active_teachers_today,

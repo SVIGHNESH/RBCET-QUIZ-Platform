@@ -29,8 +29,7 @@ class UserBase(BaseModel):
     phone_number: Optional[str] = None
     department: Optional[str] = None
     class_year: Optional[str] = None
-    student_id: Optional[str] = None
-    phone_number: Optional[str] = None
+    user_id: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -56,47 +55,6 @@ class UserResponse(UserBase):
 
 class BulkUserCreate(BaseModel):
     users: List[UserCreate]
-
-# Subject Schemas
-class SubjectBase(BaseModel):
-    name: str
-    code: str
-    description: Optional[str] = None
-    department: Optional[str] = None
-
-class SubjectCreate(SubjectBase):
-    pass
-
-class SubjectResponse(SubjectBase):
-    id: int
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-# Question Bank Schemas
-class QuestionBankBase(BaseModel):
-    subject_id: int
-    question_text: str
-    question_type: QuestionTypeEnum
-    option_a: Optional[str] = None
-    option_b: Optional[str] = None
-    option_c: Optional[str] = None
-    option_d: Optional[str] = None
-    correct_answer: str
-    difficulty_level: Optional[DifficultyLevel] = None
-    topic: Optional[str] = None
-
-class QuestionBankCreate(QuestionBankBase):
-    pass
-
-class QuestionBankResponse(QuestionBankBase):
-    id: int
-    created_by: Optional[int]
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 # Authentication Schemas
 class Token(BaseModel):
@@ -294,7 +252,7 @@ class AnswerResponse(BaseModel):
 class QuizAttemptResponse(BaseModel):
     id: int
     quiz_id: int
-    student_id: int
+    user_id: int = Field(..., alias='student_id')  # References users.id (database primary key)
     score: Optional[float]
     total_marks: float
     percentage: Optional[float]
@@ -305,6 +263,7 @@ class QuizAttemptResponse(BaseModel):
     
     class Config:
         from_attributes = True
+        populate_by_name = True  # Allows using both field name and alias
 
 class QuizAttemptDetailResponse(QuizAttemptResponse):
     answers: List[AnswerResponse]
@@ -326,10 +285,10 @@ class TeacherStats(BaseModel):
     last_quiz_created: Optional[datetime]
 
 class StudentStats(BaseModel):
-    student_id: int
+    user_id: int  # References users.id (database primary key)
     student_name: str
     email: str
-    student_code: Optional[str]
+    student_code: Optional[str]  # Custom student identifier
     department: Optional[str]
     class_year: Optional[str]
     total_quizzes_attempted: int
@@ -365,7 +324,7 @@ class UserActivityResponse(BaseModel):
     role: str
     department: Optional[str]
     class_year: Optional[str]
-    student_id: Optional[str]
+    user_id: Optional[str]  # Custom user identifier code
     last_active: datetime
     is_active: bool
     

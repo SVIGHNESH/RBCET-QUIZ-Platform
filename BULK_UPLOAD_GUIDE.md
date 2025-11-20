@@ -38,7 +38,7 @@ The Bulk User Upload feature allows administrators to import multiple users at o
 
 ### Required Headers
 ```csv
-role,first_name,last_name,email,password,phone_number,student_id,department,class_year
+role,first_name,last_name,email,password,phone_number,user_id,department,class_year
 ```
 
 ### Field Descriptions
@@ -51,7 +51,7 @@ role,first_name,last_name,email,password,phone_number,student_id,department,clas
 | **email** | ✅ Yes | Valid email address (must be unique) | `john.doe@example.com` |
 | **password** | ✅ Yes | Temporary password (min 6 characters recommended) | `password123` |
 | **phone_number** | ❌ No | Phone number (optional, validated format) | `+1234567890` or `(555) 123-4567` |
-| **student_id** | ⚠️ Conditional | Required for students only (must be unique) | `CS001` |
+| **user_id** | ⚠️ Conditional | Required for students only (must be unique) | `CS001` |
 | **department** | ❌ No | Department name (recommended) | `Computer Science Engg.` |
 | **class_year** | ❌ No | Class/Year for students | `1st Year` |
 

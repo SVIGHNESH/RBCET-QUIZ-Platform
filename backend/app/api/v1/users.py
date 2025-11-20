@@ -25,13 +25,13 @@ async def create_user(
             detail="Email already registered"
         )
     
-    # Check if student_id already exists (for students)
-    if user_data.role == RoleEnum.STUDENT and user_data.student_id:
-        existing_student = db.query(User).filter(User.student_id == user_data.student_id).first()
+    # Check if user_id already exists (for students)
+    if user_data.role == RoleEnum.STUDENT and user_data.user_id:
+        existing_student = db.query(User).filter(User.user_id == user_data.user_id).first()
         if existing_student:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Student ID already registered"
+                detail="User ID already registered"
             )
     
     # Create new user
@@ -45,7 +45,7 @@ async def create_user(
         phone_number=user_data.phone_number,
         department=user_data.department,
         class_year=user_data.class_year,
-        student_id=user_data.student_id if user_data.role == RoleEnum.STUDENT else None
+        user_id=user_data.user_id if user_data.role == RoleEnum.STUDENT else None
     )
     
     db.add(db_user)
@@ -62,7 +62,7 @@ async def bulk_upload_users(
 ):
     """
     Bulk upload users from CSV file.
-    Expected CSV format: role,first_name,last_name,email,password,phone_number,student_id,department,class_year
+    Expected CSV format: role,first_name,last_name,email,password,phone_number,user_id,department,class_year
     """
     if not file.filename.endswith(('.csv', '.xlsx', '.xls')):
         raise HTTPException(
@@ -123,23 +123,23 @@ async def bulk_upload_users(
                     })
                     continue
                 
-                # For students, check student_id
-                student_id = row.get('student_id', '').strip() if role == RoleEnum.STUDENT else None
+                # For students, check user_id
+                user_id = row.get('user_id', '').strip() if role == RoleEnum.STUDENT else None
                 if role == RoleEnum.STUDENT:
-                    if not student_id:
+                    if not user_id:
                         errors.append({
                             "row": row_num,
                             "email": email,
-                            "error": "Student ID is required for students"
+                            "error": "User ID is required for students"
                         })
                         continue
                     
-                    if db.query(User).filter(User.student_id == student_id).first():
+                    if db.query(User).filter(User.user_id == user_id).first():
                         errors.append({
                             "row": row_num,
                             "email": email,
-                            "student_id": student_id,
-                            "error": "Student ID already registered"
+                            "user_id": user_id,
+                            "error": "User ID already registered"
                         })
                         continue
                 
@@ -154,7 +154,7 @@ async def bulk_upload_users(
                     phone_number=row.get('phone_number', '').strip() or None,
                     department=row.get('department', '').strip() or None,
                     class_year=row.get('class_year', '').strip() or None,
-                    student_id=student_id
+                    user_id=user_id
                 )
                 
                 db.add(new_user)
@@ -287,8 +287,9 @@ async def get_teacher_activity(
             "role": teacher.role,
             "department": teacher.department,
             "class_year": teacher.class_year,
-            "student_id": teacher.student_id,
-            "last_active": teacher.last_active
+            "user_id": teacher.user_id,
+            "last_active": teacher.last_active,
+            "is_active": teacher.is_active
         }
         for teacher in teachers
     ]
@@ -307,8 +308,9 @@ async def get_student_activity(
             "role": student.role,
             "department": student.department,
             "class_year": student.class_year,
-            "student_id": student.student_id,
-            "last_active": student.last_active
+            "user_id": student.user_id,
+            "last_active": student.last_active,
+            "is_active": student.is_active
         }
         for student in students
     ]
