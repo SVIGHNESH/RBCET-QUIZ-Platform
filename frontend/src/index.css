@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+@keyframes slideIn {
+  /* Starting state: hidden (opacity 0) and pushed off the screen (translateY 100%) */
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  /* Ending state: fully visible (opacity 1) and in its final position (translateY 0) */
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* * Helper class to apply the animation
+ * The Toast component should use the 'animate-slideIn' class.
+*/
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out forwards;
+}

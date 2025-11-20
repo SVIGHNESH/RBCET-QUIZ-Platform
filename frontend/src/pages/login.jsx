@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { User, Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import BG from "../assets/Lbg.svg";
+import BG from "../assets/Lbg.svg"; // Assuming BG asset exists
 
 const GlassInput = ({ id, type, placeholder, icon: InputIcon, value, onChange, error: inputError, showPasswordToggle, onTogglePassword, ...props }) => (
     <div className="relative">
@@ -17,9 +17,9 @@ const GlassInput = ({ id, type, placeholder, icon: InputIcon, value, onChange, e
             value={value}
             onChange={onChange}
             className={`w-full pl-10 ${showPasswordToggle ? 'pr-12' : 'pr-4'} py-3 bg-white/30 text-gray-700 placeholder-gray-500 
-                       border ${inputError ? 'border-red-500' : 'border-white/40'} rounded-xl focus:outline-none focus:ring-2 
-                       ${inputError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} backdrop-blur-sm transition duration-300 
-                       shadow-lg focus:shadow-xl`}
+                         border ${inputError ? 'border-red-500' : 'border-white/40'} rounded-xl focus:outline-none focus:ring-2 
+                         ${inputError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} backdrop-blur-sm transition duration-300 
+                         shadow-lg focus:shadow-xl`}
             {...props}
         />
         {showPasswordToggle && (
@@ -40,7 +40,7 @@ const GlassInput = ({ id, type, placeholder, icon: InputIcon, value, onChange, e
 
 export default function Login() {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, isAuthenticated, user } = useAuth(); // Assuming useAuth provides isAuthenticated and user
     const { success, error } = useToast();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -51,21 +51,52 @@ export default function Login() {
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
+    // --- NEW: Session Management Effect ---
+    useEffect(() => {
+        // 1. Check if the user is already logged in (e.g., token present)
+        if (isAuthenticated) {
+
+            const userRole = user?.role?.toLowerCase() || 'admin';
+            let redirectPath = '/dashboard'; // Default to admin dashboard
+
+            if (userRole === 'student') {
+                redirectPath = "/student-dashboard";
+            } else if (userRole === 'teacher') {
+                redirectPath = "/teacher-dashboard";
+            }
+
+            // 2. Use navigate with replace: true to prevent going back to login
+            //    React Router's `Maps(path, { replace: true })` or the `replace()` method
+            //    is the standard way to replace the current entry in the history stack.
+            navigate(redirectPath, { replace: true });
+        }
+
+        // Cleanup function: Prevents user from caching the login page after navigating away
+        // by pushing a neutral state, further confusing the browser history.
+        return () => {
+            // You can optionally manipulate history here if `replace: true` isn't fully reliable
+            // in older browser versions or environments, but rely on `replace: true` first.
+        };
+    }, [isAuthenticated, navigate, user]); // Depend on auth state and navigation function
+
+    // --- End NEW: Session Management Effect ---
+
+
     const validateForm = () => {
         const newErrors = {};
-        
+
         if (!formData.email) {
             newErrors.email = "Email is required";
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = "Email is invalid";
         }
-        
+
         if (!formData.password) {
             newErrors.password = "Password is required";
         } else if (formData.password.length < 6) {
             newErrors.password = "Password must be at least 6 characters";
         }
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -87,41 +118,48 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
             error("Please fix the form errors");
             return;
         }
-        
+
         setIsLoading(true);
-        
+
         try {
             const result = await login(formData.email, formData.password);
-            
+
             if (result.success) {
                 setIsLoggedIn(true);
                 success("Login successful!");
-                
-                // Show success screen briefly before navigating
+
+                const userRole = result.user?.role?.toLowerCase() || 'admin';
+                let redirectPath = '/dashboard';
+
+                if (userRole === 'student') {
+                    redirectPath = "/student-dashboard";
+                } else if (userRole === 'teacher') {
+                    redirectPath = "/teacher-dashboard";
+                }
+
+                // IMPORTANT: Use replace: true here as well, so the login page is removed from history
                 setTimeout(() => {
-                    // Route based on user role
-                    if (result.user.role === 'student') {
-                        navigate("/student-dashboard");
-                    } else {
-                        navigate("/dashboard");
-                    }
+                    navigate(redirectPath, { replace: true });
                 }, 2000);
+
             } else {
-                error(result.error?.data?.detail || "Login failed. Please check your credentials.");
+                error(result.error?.detail || "Login failed. Please check your credentials.");
             }
         } catch (err) {
-            error("An unexpected error occurred");
+            console.error("Login attempt failed:", err);
+            error("An unexpected error occurred during login.");
         } finally {
             setIsLoading(false);
         }
     };
 
     // Success screen after login
+    // NOTE: This screen should disappear via navigation (replace: true) after 2 seconds
     if (isLoggedIn) {
         return (
             <div
@@ -225,7 +263,7 @@ export default function Login() {
                         <button
                             type="submit"
                             className={`w-full py-3 rounded-xl font-bold tracking-wider transition duration-300 transform 
-                                        ${isLoading
+                                ${isLoading
                                     ? 'bg-blue-300 text-white/70 cursor-not-allowed'
                                     : 'bg-white text-black hover:scale-[1.02] hover:bg-white/90 shadow-md hover:shadow-xl'
                                 }`}
