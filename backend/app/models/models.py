@@ -19,7 +19,7 @@ class User(Base):
     last_name = Column(String(100), nullable=False)
     role = Column(SQLEnum(RoleEnum), nullable=False)
     phone_number = Column(String(20), nullable=True)
-    student_id = Column(String(50), unique=True, nullable=True, index=True)
+    user_id = Column(String(50), unique=True, nullable=True, index=True)
     department = Column(String(100), nullable=True)
     class_year = Column(String(20), nullable=True)  # '1st Year', '2nd Year', etc.
     is_active = Column(Boolean, default=True)
