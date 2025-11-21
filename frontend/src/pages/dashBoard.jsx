@@ -18,8 +18,7 @@ import {
 const mockActivity = []; // No activity until users are added
 
 // Mock data for the new Activity Tracker Table
-const mockTeacherData = []; // Detaabase mein data save hone tak khali
-const mockStudentData = []; // Detaabase mein data save hone tak khali
+// placeholders removed: using live API data instead of static mocks
 
 /**
  * --- UTILITY FUNCTIONS ---
@@ -32,14 +31,15 @@ const validatePasswordStrength = (password) => {
         uppercase: /[A-Z]/.test(password),
         lowercase: /[a-z]/.test(password),
         number: /[0-9]/.test(password),
-        special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+        // any non-word, non-space character treated as special
+        special: /[^\w\s]/.test(password)
     };
 
     const score = Object.values(checks).filter(Boolean).length;
-    
+
     let strength = 'weak';
     let color = 'bg-red-500';
-    
+
     if (score >= 5) {
         strength = 'strong';
         color = 'bg-green-500';
@@ -57,21 +57,21 @@ const generateStrongPassword = () => {
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const numbers = '0123456789';
     const special = '!@#$%^&*_-+=';
-    
+
     const allChars = uppercase + lowercase + numbers + special;
-    
+
     // Ensure at least one of each type
     let password = '';
     password += uppercase[Math.floor(Math.random() * uppercase.length)];
     password += lowercase[Math.floor(Math.random() * lowercase.length)];
     password += numbers[Math.floor(Math.random() * numbers.length)];
     password += special[Math.floor(Math.random() * special.length)];
-    
+
     // Fill remaining characters (total length 12)
     for (let i = password.length; i < 12; i++) {
         password += allChars[Math.floor(Math.random() * allChars.length)];
     }
-    
+
     // Shuffle the password
     return password.split('').sort(() => Math.random() - 0.5).join('');
 };
@@ -89,14 +89,14 @@ const validateEmailDomain = (email) => {
  */
 
 // Stat Card component for key metrics
-const StatCard = ({ title, value, icon: StatIcon, color, trend, subtitle }) => { // Icon renamed to StatIcon to fix ESLint error
+const StatCard = ({ title, value, icon: Icon, color, trend, subtitle }) => {
     // If trend is N/A, we prevent showing red/green colours
     const trendColor = trend === 'N/A' ? 'text-gray-500' : (trend.includes('-') ? 'text-red-600' : 'text-green-600');
     return (
         <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 transition duration-300 hover:shadow-xl">
             <div className="flex items-center justify-between">
                 <div className={`p-3 rounded-full ${color}`}>
-                    <StatIcon size={24} />
+                    {Icon && <Icon size={24} />}
                 </div>
                 <div className="text-sm font-medium text-gray-500">{title}</div>
             </div>
@@ -192,7 +192,7 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                 const parts = value.split('@');
                 setEmailUsername(parts[0]);
                 setShowDomainDropdown(false);
-                
+
                 if (!validateEmailDomain(value)) {
                     setEmailError('Please use a valid email domain (gmail.com, rbmi.in, yahoo.com, outlook.com, hotmail.com)');
                 } else {
@@ -221,7 +221,7 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
 
     const handleBulkUploadSuccess = (result) => {
         success(`Successfully created ${result.created_count} users!`);
-        
+
         if (result.error_count > 0) {
             console.error("Upload errors:", result.errors);
             error(`${result.error_count} rows had errors. Check console for details.`);
@@ -234,7 +234,7 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // Validate email domain before submission
         if (!validateEmailDomain(formData.email)) {
             error('Please use a valid email domain (gmail.com, rbmi.in, yahoo.com, outlook.com, hotmail.com)');
@@ -267,9 +267,9 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
             }
 
             const response = await userAPI.createUser(userData);
-            
+
             success(`User ${response.first_name} ${response.last_name} created successfully!`);
-            
+
             // Reset form
             setFormData({
                 role: 'student',
@@ -291,8 +291,9 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
             setTimeout(() => {
                 onCancel();
             }, 1000);
-            
+
         } catch (err) {
+            console.error(err);
             if (err.status === 400) {
                 error(err.data?.detail || "Email or Student ID already exists!");
             } else if (err.status === 401 || err.status === 403) {
@@ -315,7 +316,7 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
             </div>
 
             {/* Bulk Upload Modal */}
-            <BulkUploadModal 
+            <BulkUploadModal
                 isOpen={showBulkUpload}
                 onClose={() => setShowBulkUpload(false)}
                 onSuccess={handleBulkUploadSuccess}
@@ -357,11 +358,11 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                 {/* User Role Selector */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">User Role</label>
-                    <select 
-                        name="role" 
-                        value={formData.role} 
-                        onChange={handleInputChange} 
-                        required 
+                    <select
+                        name="role"
+                        value={formData.role}
+                        onChange={handleInputChange}
+                        required
                         disabled={isSubmitting}
                         className="w-full p-3 border border-gray-300 rounded-lg bg-blue-50 ring-2 ring-blue-500 font-semibold disabled:bg-gray-100"
                     >
@@ -374,16 +375,16 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                 {formData.role === 'student' && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Roll No. / Student ID (Required)</label>
-                        <input 
-                            type="text" 
-                            name="student_id" 
-                            value={formData.student_id} 
-                            onChange={handleInputChange} 
-                            required={formData.role === 'student'} 
+                        <input
+                            type="text"
+                            name="student_id"
+                            value={formData.student_id}
+                            onChange={handleInputChange}
+                            required={formData.role === 'student'}
                             disabled={isSubmitting}
                             autoComplete="off"
                             placeholder="e.g., CS2024001"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                         />
                     </div>
                 )}
@@ -392,30 +393,30 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                        <input 
-                            type="text" 
-                            name="first_name" 
-                            value={formData.first_name} 
-                            onChange={handleInputChange} 
-                            required 
+                        <input
+                            type="text"
+                            name="first_name"
+                            value={formData.first_name}
+                            onChange={handleInputChange}
+                            required
                             disabled={isSubmitting}
                             autoComplete="off"
                             placeholder="Enter first name"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                        <input 
-                            type="text" 
-                            name="last_name" 
-                            value={formData.last_name} 
-                            onChange={handleInputChange} 
-                            required 
+                        <input
+                            type="text"
+                            name="last_name"
+                            value={formData.last_name}
+                            onChange={handleInputChange}
+                            required
                             disabled={isSubmitting}
                             autoComplete="off"
                             placeholder="Enter last name"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                         />
                     </div>
                     <div className="col-span-1 md:col-span-2">
@@ -423,12 +424,12 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                             Email (Login ID) <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
-                            <input 
-                                type="email" 
-                                name="email" 
-                                value={formData.email} 
-                                onChange={handleInputChange} 
-                                required 
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                required
                                 disabled={isSubmitting}
                                 autoComplete="off"
                                 placeholder="Type username (e.g., john.doe)"
@@ -439,7 +440,7 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                                     }
                                 }}
                             />
-                            
+
                             {/* Domain Dropdown */}
                             {showDomainDropdown && (
                                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
@@ -480,7 +481,7 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                                 </div>
                             )}
                         </div>
-                        
+
                         {emailError && (
                             <div className="flex items-center mt-2 text-xs text-red-600">
                                 <AlertTriangle size={14} className="mr-1" />
@@ -493,15 +494,15 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                     </div>
                     <div className="col-span-1 md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (Optional)</label>
-                        <input 
-                            type="tel" 
-                            name="phone_number" 
-                            value={formData.phone_number} 
-                            onChange={handleInputChange} 
+                        <input
+                            type="tel"
+                            name="phone_number"
+                            value={formData.phone_number}
+                            onChange={handleInputChange}
                             disabled={isSubmitting}
                             autoComplete="off"
                             placeholder="+1234567890 or 1234567890"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                         />
                     </div>
                     <div className="col-span-1 md:col-span-2">
@@ -509,16 +510,16 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                             Temporary Password <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
-                            <input 
+                            <input
                                 type={showPassword ? "text" : "password"}
-                                name="password" 
-                                value={formData.password} 
-                                onChange={handleInputChange} 
-                                required 
+                                name="password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                required
                                 disabled={isSubmitting}
                                 autoComplete="new-password"
                                 placeholder="Set temporary password"
-                                className="w-full p-3 pr-24 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                                className="w-full p-3 pr-24 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                             />
                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
                                 <button
@@ -540,24 +541,23 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                                 </button>
                             </div>
                         </div>
-                        
+
                         {/* Password Strength Indicator */}
                         {passwordStrength && (
                             <div className="mt-3 space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-gray-700">Password Strength:</span>
-                                    <span className={`text-xs font-bold uppercase ${
-                                        passwordStrength.strength === 'strong' ? 'text-green-600' :
+                                    <span className={`text-xs font-bold uppercase ${passwordStrength.strength === 'strong' ? 'text-green-600' :
                                         passwordStrength.strength === 'medium' ? 'text-yellow-600' :
-                                        'text-red-600'
-                                    }`}>
+                                            'text-red-600'
+                                        }`}>
                                         {passwordStrength.strength === 'strong' && <span className="flex items-center"><ShieldCheck size={14} className="mr-1" />Strong</span>}
                                         {passwordStrength.strength === 'medium' && <span className="flex items-center"><Key size={14} className="mr-1" />Medium</span>}
                                         {passwordStrength.strength === 'weak' && <span className="flex items-center"><AlertTriangle size={14} className="mr-1" />Weak</span>}
                                     </span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
+                                    <div
                                         className={`h-2 rounded-full transition-all ${passwordStrength.color}`}
                                         style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
                                     ></div>
@@ -588,12 +588,12 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-6">
                     <div className="col-span-1 md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                        <select 
-                            name="department" 
-                            value={formData.department} 
-                            onChange={handleInputChange} 
-                            required 
-                            disabled={isSubmitting} 
+                        <select
+                            name="department"
+                            value={formData.department}
+                            onChange={handleInputChange}
+                            required
+                            disabled={isSubmitting}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                         >
                             <option value="">Select Department</option>
@@ -605,11 +605,11 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
                     {formData.role === 'student' && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Class/Year</label>
-                            <select 
-                                name="class_year" 
-                                value={formData.class_year} 
-                                onChange={handleInputChange} 
-                                required={formData.role === 'student'} 
+                            <select
+                                name="class_year"
+                                value={formData.class_year}
+                                onChange={handleInputChange}
+                                required={formData.role === 'student'}
                                 disabled={isSubmitting}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                             >
@@ -623,16 +623,16 @@ const UserCreationForm = ({ onCancel, onUserCreated }) => {
 
                 {/* Action Buttons */}
                 <div className="flex justify-end space-x-4 pt-4">
-                    <button 
-                        type="button" 
-                        onClick={onCancel} 
+                    <button
+                        type="button"
+                        onClick={onCancel}
                         disabled={isSubmitting}
                         className="flex items-center px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
                     >
                         <X size={20} className="mr-2" /> Cancel
                     </button>
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={isSubmitting}
                         className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
@@ -723,6 +723,7 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
             success(`User ${formData.first_name} ${formData.last_name} updated successfully!`);
             onSuccess();
         } catch (err) {
+            console.error(err);
             if (err.status === 400) {
                 error(err.data?.detail || "Failed to update user");
             } else if (err.status === 401 || err.status === 403) {
@@ -758,11 +759,11 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                     {/* Email (Read-only) */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Email (Login ID)</label>
-                        <input 
-                            type="email" 
+                        <input
+                            type="email"
                             value={formData.email}
                             disabled
-                            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed" 
+                            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                         />
                         <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                     </div>
@@ -770,11 +771,11 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                     {/* Role (Read-only) */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             value={user.role}
                             disabled
-                            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed capitalize" 
+                            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed capitalize"
                         />
                         <p className="text-xs text-gray-500 mt-1">Role cannot be changed</p>
                     </div>
@@ -783,26 +784,26 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                            <input 
-                                type="text" 
-                                name="first_name" 
-                                value={formData.first_name} 
-                                onChange={handleInputChange} 
-                                required 
+                            <input
+                                type="text"
+                                name="first_name"
+                                value={formData.first_name}
+                                onChange={handleInputChange}
+                                required
                                 disabled={isSubmitting}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                            <input 
-                                type="text" 
-                                name="last_name" 
-                                value={formData.last_name} 
-                                onChange={handleInputChange} 
-                                required 
+                            <input
+                                type="text"
+                                name="last_name"
+                                value={formData.last_name}
+                                onChange={handleInputChange}
+                                required
                                 disabled={isSubmitting}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                             />
                         </div>
                     </div>
@@ -810,14 +811,14 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                     {/* Phone Number */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                        <input 
-                            type="tel" 
-                            name="phone_number" 
-                            value={formData.phone_number} 
-                            onChange={handleInputChange} 
+                        <input
+                            type="tel"
+                            name="phone_number"
+                            value={formData.phone_number}
+                            onChange={handleInputChange}
                             disabled={isSubmitting}
                             placeholder="+1234567890"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                         />
                     </div>
 
@@ -825,11 +826,11 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                            <select 
-                                name="department" 
-                                value={formData.department} 
-                                onChange={handleInputChange} 
-                                disabled={isSubmitting} 
+                            <select
+                                name="department"
+                                value={formData.department}
+                                onChange={handleInputChange}
+                                disabled={isSubmitting}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                             >
                                 <option value="">Select Department</option>
@@ -841,10 +842,10 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                         {user.role === 'student' && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Class/Year</label>
-                                <select 
-                                    name="class_year" 
-                                    value={formData.class_year} 
-                                    onChange={handleInputChange} 
+                                <select
+                                    name="class_year"
+                                    value={formData.class_year}
+                                    onChange={handleInputChange}
                                     disabled={isSubmitting}
                                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                                 >
@@ -889,15 +890,15 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                                     New Password (Optional)
                                 </label>
                                 <div className="relative">
-                                    <input 
+                                    <input
                                         type={showPassword ? "text" : "password"}
-                                        name="password" 
-                                        value={formData.password} 
-                                        onChange={handleInputChange} 
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleInputChange}
                                         disabled={isSubmitting}
                                         autoComplete="new-password"
                                         placeholder="Enter new password"
-                                        className="w-full p-3 pr-24 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" 
+                                        className="w-full p-3 pr-24 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                                     />
                                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
                                         <button
@@ -919,24 +920,23 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 {/* Password Strength Indicator */}
                                 {passwordStrength && formData.password && (
                                     <div className="mt-3 space-y-2">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-medium text-gray-700">Password Strength:</span>
-                                            <span className={`text-xs font-bold uppercase ${
-                                                passwordStrength.strength === 'strong' ? 'text-green-600' :
+                                            <span className={`text-xs font-bold uppercase ${passwordStrength.strength === 'strong' ? 'text-green-600' :
                                                 passwordStrength.strength === 'medium' ? 'text-yellow-600' :
-                                                'text-red-600'
-                                            }`}>
+                                                    'text-red-600'
+                                                }`}>
                                                 {passwordStrength.strength === 'strong' && <span className="flex items-center"><ShieldCheck size={14} className="mr-1" />Strong</span>}
                                                 {passwordStrength.strength === 'medium' && <span className="flex items-center"><Key size={14} className="mr-1" />Medium</span>}
                                                 {passwordStrength.strength === 'weak' && <span className="flex items-center"><AlertTriangle size={14} className="mr-1" />Weak</span>}
                                             </span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2">
-                                            <div 
+                                            <div
                                                 className={`h-2 rounded-full transition-all ${passwordStrength.color}`}
                                                 style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
                                             ></div>
@@ -966,16 +966,16 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
 
                     {/* Action Buttons */}
                     <div className="flex justify-end space-x-4 pt-4 border-t">
-                        <button 
-                            type="button" 
-                            onClick={onClose} 
+                        <button
+                            type="button"
+                            onClick={onClose}
                             disabled={isSubmitting}
                             className="flex items-center px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
                         >
                             <X size={20} className="mr-2" /> Cancel
                         </button>
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             disabled={isSubmitting}
                             className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-md disabled:bg-blue-400 disabled:cursor-not-allowed"
                         >
@@ -1011,6 +1011,7 @@ const UserList = ({ onAddClick, refreshTrigger }) => {
             const response = await userAPI.getAllUsers();
             setUsers(response);
         } catch (err) {
+            console.error(err);
             error("Failed to load users");
         } finally {
             setIsLoading(false);
@@ -1031,6 +1032,7 @@ const UserList = ({ onAddClick, refreshTrigger }) => {
             success(`User ${userName} deleted successfully`);
             fetchUsers(); // Refresh list
         } catch (err) {
+            console.error(err);
             error(err.data?.detail || "Failed to delete user");
         }
     };
@@ -1057,31 +1059,28 @@ const UserList = ({ onAddClick, refreshTrigger }) => {
                     <div className="flex gap-2 mt-2">
                         <button
                             onClick={() => setFilter('all')}
-                            className={`px-3 py-1 rounded-lg text-sm transition ${
-                                filter === 'all'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
+                            className={`px-3 py-1 rounded-lg text-sm transition ${filter === 'all'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
                         >
                             All Users
                         </button>
                         <button
                             onClick={() => setFilter('teacher')}
-                            className={`px-3 py-1 rounded-lg text-sm transition ${
-                                filter === 'teacher'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
+                            className={`px-3 py-1 rounded-lg text-sm transition ${filter === 'teacher'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
                         >
                             Teachers
                         </button>
                         <button
                             onClick={() => setFilter('student')}
-                            className={`px-3 py-1 rounded-lg text-sm transition ${
-                                filter === 'student'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
+                            className={`px-3 py-1 rounded-lg text-sm transition ${filter === 'student'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
                         >
                             Students
                         </button>
@@ -1125,20 +1124,18 @@ const UserList = ({ onAddClick, refreshTrigger }) => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phone_number || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                                             user.role === 'teacher' ? 'bg-blue-100 text-blue-800' :
-                                            'bg-green-100 text-green-800'
-                                        }`}>
+                                                'bg-green-100 text-green-800'
+                                            }`}>
                                             {user.role}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.student_id || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                        }`}>
+                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                            }`}>
                                             {user.is_active ? 'Active' : 'Inactive'}
                                         </span>
                                     </td>
@@ -1223,9 +1220,9 @@ const UserActivityTable = ({ userType }) => {
         if (!lastActive) return 'Never';
         try {
             const date = new Date(lastActive);
-            return date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
@@ -1238,14 +1235,14 @@ const UserActivityTable = ({ userType }) => {
     // Export to CSV functionality
     const exportToCSV = () => {
         // Prepare CSV headers with all details
-        const headers = userType === 'Students' 
+        const headers = userType === 'Students'
             ? ['Sr. No.', 'Student ID', 'First Name', 'Last Name', 'Email', 'Phone Number', 'Department', 'Class/Year', 'Role', 'Created At', 'Last Active', 'Status']
             : ['Sr. No.', 'First Name', 'Last Name', 'Email', 'Phone Number', 'Department', 'Role', 'Created At', 'Last Active', 'Status'];
 
         // Prepare CSV rows with complete information
         const rows = filteredData.map((user, index) => {
-            const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { 
-                month: 'short', day: 'numeric', year: 'numeric' 
+            const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
             }) : 'N/A';
 
             if (userType === 'Students') {
@@ -1382,9 +1379,8 @@ const UserActivityTable = ({ userType }) => {
                                             {formatLastActive(user.last_active)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                            }`}>
+                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                }`}>
                                                 {user.is_active ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
@@ -1395,7 +1391,7 @@ const UserActivityTable = ({ userType }) => {
                                             <div className="flex flex-col items-center justify-center space-y-3">
                                                 <UserCheck size={48} className="text-gray-300" />
                                                 <p className="text-gray-500 font-medium">
-                                                    {searchTerm 
+                                                    {searchTerm
                                                         ? `No ${userType.toLowerCase()} found matching "${searchTerm}"`
                                                         : `No ${userType.toLowerCase()} found. Add some users to get started.`
                                                     }
@@ -1422,7 +1418,7 @@ const UserActivityTable = ({ userType }) => {
                             <p className="text-sm text-gray-600">
                                 Displaying {filteredData.length} {userType.toLowerCase()}
                             </p>
-                            <button 
+                            <button
                                 onClick={exportToCSV}
                                 className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-md"
                             >
@@ -1630,14 +1626,566 @@ const DetailedReportsTool = () => {
 };
 
 
+// Add this component before the 'App' function
+const QuizManagementTool = () => {
+    const [quizView, setQuizView] = useState('active'); // active, pending, create
+
+    // Mock data for display
+    const mockQuizzes = {
+        active: [
+            { id: 101, title: "Data Structures Midterm", author: "Prof. Anjali D.", status: "Active", students: 120, submissions: 115, date: "Oct 25, 2025" },
+            { id: 102, title: "Engineering Physics II Quiz 1", author: "Prof. Rohan B.", status: "Active", students: 95, submissions: 88, date: "Nov 1, 2025" },
+        ],
+        pending: [
+            { id: 201, title: "Algorithms Final Exam", author: "Prof. Anjali D.", status: "Review", students: 120, submissions: 120, date: "Oct 15, 2025" },
+            { id: 202, title: "Electrical Circuits Pre-Test", author: "Prof. Priya K.", status: "Review", students: 80, submissions: 75, date: "Nov 10, 2025" },
+        ]
+    };
+
+    const renderQuizTable = (data, type) => (
+        <div className="overflow-x-auto border rounded-xl shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                    <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quiz Title</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submissions</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                    {data.length > 0 ? data.map((quiz) => (
+                        <tr key={quiz.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{quiz.title}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{quiz.author}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{quiz.date}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{quiz.students}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">{quiz.submissions}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button className="text-blue-600 hover:text-blue-900 transition mr-4">View Report</button>
+                                {type === 'pending' && (
+                                    <button className="text-green-600 hover:text-green-900 transition">Approve</button>
+                                )}
+                            </td>
+                        </tr>
+                    )) : (
+                        <tr>
+                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">No quizzes found in this category.</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        </div>
+    );
+
+    const renderCreateQuiz = () => (
+        <div className="p-8 border border-blue-200 bg-blue-50/50 rounded-xl space-y-6">
+            <h3 className="text-xl font-bold text-blue-800 flex items-center">
+                <Plus size={24} className="mr-2" /> Start a New Quiz / Exam
+            </h3>
+            <p className="text-gray-600">This feature is managed by individual teachers. As Admin, you can only set global parameters or launch the teacher-side interface.</p>
+            <button
+                onClick={() => console.log('Simulating redirect to Teacher Quiz Creation page...')}
+                className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-lg"
+            >
+                <FileText size={20} className="mr-2" /> Access Quiz Creator Panel
+            </button>
+        </div>
+    );
+
+    return (
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 space-y-6">
+            <h2 className="text-2xl font-bold text-gray-800">Quiz Management & Moderation</h2>
+
+            <div className="flex space-x-3 border-b pb-4">
+                <button
+                    onClick={() => setQuizView('active')}
+                    className={`px-4 py-2 rounded-xl font-semibold transition ${quizView === 'active' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                    Active Quizzes ({mockQuizzes.active.length})
+                </button>
+                <button
+                    onClick={() => setQuizView('pending')}
+                    className={`px-4 py-2 rounded-xl font-semibold transition ${quizView === 'pending' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                    Pending Review ({mockQuizzes.pending.length})
+                </button>
+                <button
+                    onClick={() => setQuizView('create')}
+                    className={`px-4 py-2 rounded-xl font-semibold transition ${quizView === 'create' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                    Create Quiz
+                </button>
+            </div>
+
+            {quizView === 'active' && (
+                <div className="space-y-4">
+                    <p className="text-gray-600">List of quizzes currently open for submissions or pending grading.</p>
+                    {renderQuizTable(mockQuizzes.active, 'active')}
+                </div>
+            )}
+
+            {quizView === 'pending' && (
+                <div className="space-y-4">
+                    <p className="text-gray-600">Quizzes submitted by teachers awaiting admin approval before being deployed.</p>
+                    {renderQuizTable(mockQuizzes.pending, 'pending')}
+                </div>
+            )}
+
+            {quizView === 'create' && renderCreateQuiz()}
+        </div>
+    );
+};
+
+
+
+// Add this component before the 'App' function
+const SettingsTool = () => {
+    const { success } = useToast();
+    const [systemName, setSystemName] = useState('MacQuiz Learning Platform');
+    const [defaultDomain, setDefaultDomain] = useState('rbmi.in');
+    const [gradingScale, setGradingScale] = useState('A: 90+, B: 80-89, C: 70-79, D: 60-69, F: < 60');
+    const [allowBulkUpload, setAllowBulkUpload] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = (e) => {
+        e.preventDefault();
+        setIsSaving(true);
+        // Simulate API call delay
+        setTimeout(() => {
+            setIsSaving(false);
+            success("System settings updated successfully!");
+        }, 1500);
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 space-y-8">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                <Settings size={28} className="mr-2 text-blue-600" /> System Configuration
+            </h2>
+            <p className="text-gray-600">Adjust core parameters for the platform, user management, and grading policies.</p>
+
+            <form onSubmit={handleSave} className="space-y-6">
+
+                {/* General Settings */}
+                <div className="border p-6 rounded-xl bg-gray-50 space-y-4">
+                    <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">General System Settings</h3>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Platform Name</label>
+                        <input
+                            type="text"
+                            value={systemName}
+                            onChange={(e) => setSystemName(e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Default Email Domain (for new users)</label>
+                        <input
+                            type="text"
+                            value={defaultDomain}
+                            onChange={(e) => setDefaultDomain(e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., example.edu"
+                            required
+                        />
+                    </div>
+                </div>
+
+                {/* Grading & Policy Settings */}
+                <div className="border p-6 rounded-xl bg-gray-50 space-y-4">
+                    <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">User & Grading Policy</h3>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Global Grading Scale</label>
+                        <textarea
+                            value={gradingScale}
+                            onChange={(e) => setGradingScale(e.target.value)}
+                            rows="4"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Define letter grades and score ranges"
+                            required
+                        ></textarea>
+                        <p className="text-xs text-gray-500 mt-1">This scale is applied to final report generation.</p>
+                    </div>
+
+                    <div className="flex items-center pt-2">
+                        <input
+                            type="checkbox"
+                            name="allow_bulk_upload"
+                            checked={allowBulkUpload}
+                            onChange={(e) => setAllowBulkUpload(e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label className="ml-2 block text-sm text-gray-700">
+                            Enable **Bulk User Upload** (Allow importing users via CSV)
+                        </label>
+                    </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-4">
+                    <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="flex items-center px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                        {isSaving ? (
+                            <>
+                                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save size={20} className="mr-2" /> Save Settings
+                            </>
+                        )}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
+
+//import { Maximize2, Clock, Calendar, CheckSquare, List, UploadCloud } from 'lucide-react';
+
+// Mock API functions for quizzes
+const quizAPI = {
+    createQuiz: (quizData) => new Promise((resolve) => {
+        setTimeout(() => {
+            console.log("Mock API: Creating Quiz", quizData);
+            resolve({ id: Math.floor(Math.random() * 1000), ...quizData });
+        }, 800);
+    }),
+};
+
+const CreateNewQuizForm = ({ onQuizCreated, onCancel }) => {
+    const { success, error } = useToast();
+    const [formData, setFormData] = useState({
+        title: '',
+        department: '',
+        class_year: '1st Year',
+        duration_minutes: 60,
+        total_questions: 20,
+        start_date: new Date().toISOString().split('T')[0],
+        requires_approval: true,
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const mockDepartments = ['Computer Science Engg.', 'Artificial Intelligence', 'Mechanical Engineering', 'Electrical Engineering'];
+    const mockYears = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData({
+            ...formData,
+            [name]: type === 'checkbox' ? checked : value,
+        });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        // Simple validation
+        if (formData.title.length < 5) {
+            error("Quiz title must be at least 5 characters long.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        try {
+            // Note: In a real app, 'author' (teacher ID) would be dynamically added here
+            const response = await quizAPI.createQuiz({ ...formData, author_id: "ADMIN_001" });
+
+            success(`Quiz '${response.title}' created successfully! It is now pending teacher or admin approval.`);
+            onQuizCreated();
+            onCancel();
+
+        } catch (err) {
+            console.error(err);
+            error("Failed to create quiz. Please check the form data.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+            <h3 className="text-2xl font-bold text-blue-800 mb-6 flex items-center">
+                <Plus size={24} className="mr-2" /> Define New Quiz Structure
+            </h3>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+
+                {/* Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Quiz/Exam Title *</label>
+                        <input
+                            type="text"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Semester 1 Midterm Exam - CS 201"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <List size={16} className="mr-1 text-gray-500" /> Department Target
+                        </label>
+                        <select
+                            name="department"
+                            value={formData.department}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="">Select Department</option>
+                            {mockDepartments.map(dept => (
+                                <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <Maximize2 size={16} className="mr-1 text-gray-500" /> Class/Year Target
+                        </label>
+                        <select
+                            name="class_year"
+                            value={formData.class_year}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            {mockYears.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Timing and Questions */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <Clock size={16} className="mr-1 text-gray-500" /> Duration (Minutes)
+                        </label>
+                        <input
+                            type="number"
+                            name="duration_minutes"
+                            value={formData.duration_minutes}
+                            onChange={handleInputChange}
+                            min="1"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <CheckSquare size={16} className="mr-1 text-gray-500" /> Total Questions
+                        </label>
+                        <input
+                            type="number"
+                            name="total_questions"
+                            value={formData.total_questions}
+                            onChange={handleInputChange}
+                            min="1"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <Calendar size={16} className="mr-1 text-gray-500" /> Deployment Date
+                        </label>
+                        <input
+                            type="date"
+                            name="start_date"
+                            value={formData.start_date}
+                            onChange={handleInputChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            required
+                        />
+                    </div>
+                </div>
+
+                {/* Settings */}
+                <div className="flex items-center pt-2">
+                    <input
+                        type="checkbox"
+                        name="requires_approval"
+                        checked={formData.requires_approval}
+                        onChange={handleInputChange}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label className="ml-2 block text-sm font-medium text-gray-700">
+                        Quiz requires **Final Admin Approval** before deployment.
+                    </label>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 pt-4 border-t">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="flex items-center px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 transition"
+                    >
+                        <X size={20} className="mr-2" /> Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-md disabled:bg-gray-400"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                                Submitting...
+                            </>
+                        ) : (
+                            <>
+                                <UploadCloud size={20} className="mr-2" /> Submit for Review
+                            </>
+                        )}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
+
+// quiz review model
+
+
+const ReviewQuizModal = ({ quiz, onClose, onActionSuccess }) => {
+    const { success, error } = useToast();
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const handleApprove = async () => {
+        setIsProcessing(true);
+        try {
+            // Simulate an API call to approve the quiz
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            success(`Quiz '${quiz.title}' approved and marked ready for deployment.`);
+            onActionSuccess();
+        } catch (err) {
+            console.error(err);
+            error("Failed to approve quiz.");
+        } finally {
+            setIsProcessing(false);
+            onClose();
+        }
+    };
+
+    const handleReject = async () => {
+        if (!window.confirm(`Are you sure you want to reject and archive '${quiz.title}'?`)) return;
+
+        setIsProcessing(true);
+        try {
+            // Simulate an API call to reject/archive the quiz
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            success(`Quiz '${quiz.title}' rejected and sent back to the author.`);
+            onActionSuccess();
+        } catch (err) {
+            console.error(err);
+            error("Failed to reject quiz.");
+        } finally {
+            setIsProcessing(false);
+            onClose();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100">
+
+                {/* Header */}
+                <div className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white p-6 rounded-t-2xl flex justify-between items-center">
+                    <div>
+                        <h2 className="text-2xl font-bold flex items-center">
+                            <ClipboardList size={24} className="mr-2" /> Review Quiz: {quiz.title}
+                        </h2>
+                        <p className="text-yellow-100 text-sm mt-1">Final administrative check before setting active.</p>
+                    </div>
+                    <button onClick={onClose} className="text-white hover:bg-white/20 p-2 rounded-full transition" disabled={isProcessing}>
+                        <X size={24} />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* Quiz Details */}
+                    <div className="grid grid-cols-2 gap-4 border p-4 rounded-lg bg-gray-50">
+                        <p className="text-sm font-medium text-gray-700">Author: <span className="font-semibold text-gray-900">{quiz.author}</span></p>
+                        <p className="text-sm font-medium text-gray-700">Department: <span className="font-semibold text-gray-900">{quiz.department || 'N/A'}</span></p>
+                        <p className="text-sm font-medium text-gray-700">Date Proposed: <span className="font-semibold text-gray-900">{quiz.date}</span></p>
+                        <p className="text-sm font-medium text-gray-700">Duration: <span className="font-semibold text-gray-900">{quiz.duration_minutes || '60'} mins</span></p>
+                        <p className="text-sm font-medium text-gray-700">Total Questions: <span className="font-semibold text-gray-900">{quiz.total_questions || '20'}</span></p>
+                        <p className="text-sm font-medium text-gray-700">Status: <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">{quiz.status}</span></p>
+                    </div>
+
+                    {/* Content Preview (Mock) */}
+                    <div className="border border-dashed border-gray-300 p-4 rounded-lg bg-white">
+                        <h3 className="text-lg font-bold text-gray-800 mb-3">Quiz Content Preview (Mock)</h3>
+                        <p className="text-sm text-gray-600 italic">
+                            [Simulated Preview: Question 1: What is the complexity of QuickSort in the worst case? (Option A: O(n log n), Option B: O(n²), Option C: O(n))...]
+                        </p>
+                        <p className="text-xs text-red-500 mt-2">
+                            ⚠️ Admin should manually verify all content and security settings before approving.
+                        </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end space-x-4 pt-4 border-t">
+                        <button
+                            type="button"
+                            onClick={handleReject}
+                            disabled={isProcessing}
+                            className="flex items-center px-4 py-2 border border-red-300 rounded-xl text-red-700 hover:bg-red-50 transition disabled:opacity-50"
+                        >
+                            <X size={20} className="mr-2" /> Reject & Archive
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleApprove}
+                            disabled={isProcessing}
+                            className="flex items-center px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition shadow-md disabled:bg-gray-400"
+                        >
+                            {isProcessing ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                                    Approving...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle size={20} className="mr-2" /> Approve Quiz
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+
 /**
  * --- MAIN APPLICATION COMPONENT (Admin Dashboard) ---
  */
 export default function App() {
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
-    const { success, error } = useToast();
-    
+    const { logout } = useAuth();
+    const { success } = useToast();
+
     // userViewMode can be 'list' (show table) or 'add' (show form)
     const [activeTab, setActiveTab] = useState('Dashboard');
     const [userViewMode, setUserViewMode] = useState('list');
@@ -1654,11 +2202,13 @@ export default function App() {
                 setAllUsers(users);
             } catch (err) {
                 // Silently fail, will show 0 counts
+                console.error(err);
+
             } finally {
                 setStatsLoading(false);
             }
         };
-        
+
         fetchDashboardStats();
     }, [userListRefresh]); // Re-fetch when users are added/deleted
 
@@ -1669,36 +2219,36 @@ export default function App() {
         const totalUsers = allUsers.length;
 
         return [
-            { 
-                title: "Total Quizzes Held", 
-                value: "0", 
-                icon: FileText, 
-                color: "bg-blue-100/50 text-blue-800", 
-                subtitle: "No quizzes created yet", 
-                trend: "N/A" 
+            {
+                title: "Total Quizzes Held",
+                value: "0",
+                icon: FileText,
+                color: "bg-blue-100/50 text-blue-800",
+                subtitle: "No quizzes created yet",
+                trend: "N/A"
             },
-            { 
-                title: "Total Students", 
-                value: totalStudents.toString(), 
-                icon: UserCheck, 
-                color: "bg-indigo-100/50 text-indigo-800", 
-                subtitle: `${totalStudents} student${totalStudents !== 1 ? 's' : ''} registered`, 
+            {
+                title: "Total Students",
+                value: totalStudents.toString(),
+                icon: UserCheck,
+                color: "bg-indigo-100/50 text-indigo-800",
+                subtitle: `${totalStudents} student${totalStudents !== 1 ? 's' : ''} registered`,
                 trend: totalStudents > 0 ? `+${totalStudents}` : "N/A"
             },
-            { 
-                title: "Total Teachers", 
-                value: totalTeachers.toString(), 
-                icon: Users, 
-                color: "bg-green-100/50 text-green-800", 
-                subtitle: `${totalTeachers} teacher${totalTeachers !== 1 ? 's' : ''} registered`, 
+            {
+                title: "Total Teachers",
+                value: totalTeachers.toString(),
+                icon: Users,
+                color: "bg-green-100/50 text-green-800",
+                subtitle: `${totalTeachers} teacher${totalTeachers !== 1 ? 's' : ''} registered`,
                 trend: totalTeachers > 0 ? `+${totalTeachers}` : "N/A"
             },
-            { 
-                title: "Total Users", 
-                value: totalUsers.toString(), 
-                icon: Zap, 
-                color: "bg-yellow-100/50 text-yellow-800", 
-                subtitle: `${totalUsers} user${totalUsers !== 1 ? 's' : ''} in system`, 
+            {
+                title: "Total Users",
+                value: totalUsers.toString(),
+                icon: Zap,
+                color: "bg-yellow-100/50 text-yellow-800",
+                subtitle: `${totalUsers} user${totalUsers !== 1 ? 's' : ''} in system`,
                 trend: totalUsers > 0 ? `+${totalUsers}` : "N/A"
             },
         ];
@@ -1793,13 +2343,13 @@ export default function App() {
             } // Added braces to fix no-case-declarations
             case 'Users':
                 return userViewMode === 'add' ? (
-                    <UserCreationForm 
-                        onCancel={() => setUserViewMode('list')} 
+                    <UserCreationForm
+                        onCancel={() => setUserViewMode('list')}
                         onUserCreated={handleUserCreated}
                     />
                 ) : (
-                    <UserList 
-                        onAddClick={() => setUserViewMode('add')} 
+                    <UserList
+                        onAddClick={() => setUserViewMode('add')}
                         refreshTrigger={userListRefresh}
                     />
                 );
@@ -1808,13 +2358,18 @@ export default function App() {
                 return <UserActivityTable userType="Teachers" />;
             case 'Students':
                 return <UserActivityTable userType="Students" />;
-            // Removed old 'Activity Tracker' case
+
+            // 🚀 UPDATED: Use the dedicated QuizManagementTool component
             case 'Quizzes':
-                return <Placeholder content="Quiz Management: View and moderate all active and pending quiz submissions." />;
+                return <QuizManagementTool />;
+
             case 'Detailed Reports':
                 return <DetailedReportsTool />;
+
+            // ⚙️ UPDATED: Use the dedicated SettingsTool component
             case 'Settings':
-                return <Placeholder content="System Configuration: Manage grading scales, departmental listings, and platform settings." />;
+                return <SettingsTool />;
+
             default:
                 return <Placeholder content="Page Not Found" />;
         }

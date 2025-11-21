@@ -6,6 +6,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Login from "./pages/login";
 import Dashboard from "./pages/dashBoard";
 import StudentDashboard from "./pages/studentDashboard";
+import TeacherDashboard from "./pages/TeacherDashboard";
 
 export default function App() {
   return (
@@ -14,21 +15,29 @@ export default function App() {
         <ToastProvider>
           <Routes>
             <Route path="/" element={<Login />} />
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/student-dashboard" 
+            <Route
+              path="/teacher-dashboard"
+              element={
+                <ProtectedRoute>
+                  <TeacherDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student-dashboard"
               element={
                 <ProtectedRoute>
                   <StudentDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route path="*" element={
               <div className="min-h-screen flex items-center justify-center bg-gray-50">

@@ -12,22 +12,22 @@ class APIError extends Error {
 async function fetchAPI(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     const token = localStorage.getItem('access_token');
-    
+
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers,
     };
-    
+
     if (token && !options.skipAuth) {
         headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     try {
         const response = await fetch(url, {
             ...options,
             headers,
         });
-        
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new APIError(
@@ -36,12 +36,12 @@ async function fetchAPI(endpoint, options = {}) {
                 errorData
             );
         }
-        
+
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
             return await response.json();
         }
-        
+
         return response;
     } catch (error) {
         if (error instanceof APIError) {
@@ -56,7 +56,7 @@ export const authAPI = {
         const formData = new URLSearchParams();
         formData.append('username', email);
         formData.append('password', password);
-        
+
         const response = await fetchAPI('/api/v1/auth/login', {
             method: 'POST',
             headers: {
@@ -65,11 +65,11 @@ export const authAPI = {
             body: formData,
             skipAuth: true,
         });
-        
+
         localStorage.setItem('access_token', response.access_token);
         return response;
     },
-    
+
     logout: () => {
         localStorage.removeItem('access_token');
     },
