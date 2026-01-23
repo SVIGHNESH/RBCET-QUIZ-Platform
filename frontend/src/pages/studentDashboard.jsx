@@ -22,7 +22,7 @@ const useToast = () => {
 // API UTILITIES & DATA STRUCTURES (API Dependent)
 // ===================================
 
-const API_BASE_URL = 'http://localhost:8000'; // Using localhost default base URL for this environment
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // Session management defaults (milliseconds)
 const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutes
