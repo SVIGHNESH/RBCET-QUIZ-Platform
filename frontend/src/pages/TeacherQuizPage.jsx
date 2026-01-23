@@ -11,6 +11,7 @@ import {
 // Initialize PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const API_ROUTE = "/api/v1/quizzes/";
 const SUBJECTS_ROUTE = "/api/v1/subjects/";
 
@@ -172,7 +173,7 @@ export default function TeacherQuizPage({ initialCreatorId = null }) {
                 ];
 
                 try {
-                    const res = await fetch(SUBJECTS_ROUTE);
+                    const res = await fetch(`${API_BASE_URL}${SUBJECTS_ROUTE}`);
                     if (res.ok) {
                         const data = await res.json();
                         if (!cancelled) setSubjects(data.length > 0 ? data : mockSubjects);
